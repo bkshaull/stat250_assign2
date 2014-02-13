@@ -1,3 +1,4 @@
 stat250_assign2
 ===============
-This code uses the number of cores of the computer in parallel to compute the mean, standard deviation and median.  This only works through 2007 and will need to be modified to include the years after the change in format. 
+The first method uses the number of cores of the computer in parallel to compute the mean, standard deviation and median. 
+The second method uses the AirlineDelays package to call C in R and uses threads to process files to compute the mean, median and standard deviation. 
