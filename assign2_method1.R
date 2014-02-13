@@ -5,17 +5,34 @@ cname2=list.files(pattern="199.\\.csv$")
 cname3=c("2000.csv", "2003.csv", "2004.csv", "2005.csv", "2006.csv", "2007.csv")
 cname=c(cname1, cname2, cname3)
 
+
+name1=list.files(pattern="^2008_")
+name2=list.files(pattern="^2009_")
+name3=list.files(pattern="^2010_")
+name4=list.files(pattern="^2011_")
+name5=list.files(pattern="^2012_")
+name=c(name1, name2, name3, name4, name5)
+
 library(parallel)
 c=detectCores()
 
-freq=function(fnames){
+freq15=function(fnames){
 	cmd="grep -v ArrDelay %s | cut -f 15 -d , | sort -n | uniq -c"
 	cmd=sprintf(cmd, paste(fnames, collapse=" "))
 	system(cmd, intern=TRUE)
 }
+
+freq44=function(fnames){
+	cmd="grep -v ARR_DELAY_NEW %s | cut -f 44 -d , | sort -n | uniq -c"
+	cmd=sprintf(cmd, paste(fnames, collapse=" "))
+	system(cmd, intern=TRUE)
+}
+#makes cluster for however many cores that exist in the machine
 cl=makeCluster(c, type="FORK")
+
+##Getting frequency table for up until 2008
 clusp=clusterSplit(cl,cname)
-freqtab=clusterApply(cl,clusp,freq)
+freqtab=clusterApply(cl,clusp,freq15)
 x1=textConnection(freqtab[[1]])
 x2=textConnection(freqtab[[2]])
 tb1=read.table(x1)
@@ -31,13 +48,40 @@ names(tb2)=y
 i=setdiff(names(tb2),names(tb1))
 tb1[i]=0
 tb1[names(tb2)]=tb1[names(tb2)]+tb2
+
+
+
+#Getting Frequency table for 2008 and after
+clusp=clusterSplit(cl,name)
+freqtab=clusterApply(cl,clusp,freq44)
+x1=textConnection(freqtab[[1]])
+x2=textConnection(freqtab[[2]])
+b1=read.table(x1)
+b2=read.table(x2)
+x=b1$V1
+y=b1$V2
+b1=as.table(x)
+names(b1)=y
+x=b2$V1
+y=b2$V2
+b2=as.table(x)
+names(b2)=y
+i=setdiff(names(b2),names(b1))
+b1[i]=0
+b1[names(b2)]=b1[names(b2)]+b2
+
+
+stopCluster(cl)
+
+#merging tables together
+i=setdiff(names(b1), names(tb1))
+tb1[i]=0
+tb1[names(b1)]=tb1[names(b1)]+b1
 V1=as.vector(tb1)
 V2=as.integer(names(tb1))
 freq=cbind(V1,V2)
 freq[is.na(freq)]=0 #gets rid of the NAs
 freq=freq[order(freq[ ,2]), ]
-
-stopCluster(cl)
 
 #calculating mean
 numfreq=nrow(freq)
@@ -75,4 +119,4 @@ time2=proc.time()-time1
 
 bshaull_assign2_method1=list(time = time2, results = c(mean = mean, median = median, sd = st_dev),
      system = Sys.info(),  session = sessionInfo())
-save(bshaull_assign2_method1, file="bshaull_assign2.rda")
+save(bshaull_assign2_method1, file="bshaull_assign2_method1.rda")
